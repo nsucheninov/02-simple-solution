@@ -1,0 +1,226 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "String",
+            "defaultValue": "westeurope",
+            "metadata": {
+              "description": "Specifies the location in which to create the workspace."
+            }
+        },
+        "_artifactsLocation": {
+            "type": "string",
+            "metadata": {
+                "description": "The base URI where artifacts required by this template are located including a trailing '/'"
+            },
+            "defaultValue": "[deployment().properties.templateLink.uri]"
+        },
+        "_artifactsLocationSasToken": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The sasToken required to access _artifactsLocation.  When the template is deployed using the accompanying scripts, a sasToken will be automatically generated. Use the defaultValue if the staging location is not secured."
+            },
+            "defaultValue": ""
+        }        
+    },
+    "variables": {
+        "workspace": {
+            "apiVersion": "2017-03-15-preview",
+            "name": "[concat(uniquestring(resourceGroup().id), '-ws')]",
+            "sku": "PerGB2018"
+        },
+        "solution": {
+            "apiVersion": "2015-11-01-preview",
+            "name": "MySolution",
+            "version": "1.0",
+            "publisher": "Contoso",
+            "productName": "SampleSolution"
+        },
+        "savedSearch": {
+            "apiVersion": "2017-03-15-preview",
+            "displayName": "Bla bla records by hour",
+            "query": "MyRecord_CL | summarize AggregatedValue = avg(Rating_d) by Instance_s, bin(TimeGenerated, 60m)",
+            "category": "Samples",
+            "name": "Samples-Count of data"
+          },
+        "dashboard": {
+            "name": "PowerMonitoring",
+            "apiVersion": "2015-08-01-preview"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.OperationalInsights/workspaces",
+            "name": "[variables('workspace').name]",
+            "apiVersion": "[variables('workspace').apiVersion]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "sku": {
+                    "Name": "[variables('workspace').sku]"
+                },
+                "features": {
+                    "searchVersion": 1
+                }
+            },
+            "resources": [
+                {
+                    "apiVersion": "2015-11-01-preview",
+                    "name": "SampleView",
+                    "type": "views",
+                    "location": "[parameters('location')]",
+                    "id": "[Concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationalInsights/workspaces/', variables('workspace').name, '/views/SampleView')]",
+                    "dependson": [
+                        "[resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name)]"
+                    ],
+                    "properties": {
+                        "Id": "SampleView",
+                        "Name": "SampleView",
+                        "Author": null,
+                        "Source": "Local",
+                        "Version": 2,
+                        "Dashboard": [],
+                        "Filters": [],
+                        "OverviewTile": {
+                            "Id": "SingleNumberBuilderTile",
+                            "Type": "OverviewTile",
+                            "Version": 2,
+                            "Configuration": {
+                                "Tile": {
+                                    "Legend": "Types of data",
+                                    "Query": "search * | summarize AggregatedValue = count() by Type | count"
+                                },
+                                "Advanced": {
+                                    "DataFlowVerification": {
+                                        "Enabled": false,
+                                        "Query": "search * | limit 1 | project TimeGenerated",
+                                        "Message": "There is nothing to display at the moment"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+            ]
+        },
+        {
+            "name": "[concat(variables('solution').name, '[', variables('workspace').name, ']')]",
+            "location": "[parameters('location')]",
+            "tags": { },
+            "type": "Microsoft.OperationsManagement/solutions",
+            "apiVersion": "[variables('solution').apiVersion]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name)]"
+            ],
+            "properties": {
+                "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name)]",
+                "referencedResources": [
+                ],
+                "containedResources": [
+                ]
+            },
+            "plan": {
+                "name": "[concat(variables('solution').name, '[' ,variables('workspace').name, ']')]",
+                "Version": "[variables('solution').version]",
+                "product": "[variables('solution').productName]",
+                "publisher": "[variables('solution').publisher]",
+                "promotionCode": ""
+            }
+        },
+        {
+            "name": "[concat(variables('workspace').name, '/', variables('savedSearch').name)]",
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "[variables('savedSearch').apiVersion]",
+            "dependsOn": [ 
+                "[resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name)]"
+            ],
+            "tags": { },
+            "properties": {
+              "etag": "*",
+              "query": "[variables('savedSearch').query]",
+              "displayName": "[variables('savedSearch').displayName]",
+              "category": "[variables('savedSearch').category]"
+            }            
+        },
+        {      
+            "name":  "[guid(subscription().subscriptionId, deployment().name)]",
+            "type": "Microsoft.Portal/dashboards",
+            "location": "[parameters('location')]",
+            "apiVersion": "[variables('dashboard').apiVersion]",
+            "tags": {
+              "hidden-title": "[variables('dashboard').name]"
+            },
+            "dependsOn": [
+                "[Concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationalInsights/workspaces/', variables('workspace').name, '/views/SampleView')]"
+            ],
+            "properties": {
+                "lenses": {
+                    "0": {
+                        "order": 0,
+                        "parts": {
+                            "0": {
+                                "position": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "rowSpan": 2,
+                                    "colSpan": 4
+                                },
+                                "metadata": {
+                                    "inputs": [
+                                        {
+                                            "name": "id",
+                                            "value": "[Concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationalInsights/workspaces/', variables('workspace').name, '/views/SampleView')]"
+                                        },
+                                        {
+                                            "name": "solutionId",
+                                            "isOptional": true
+                                        },
+                                        {
+                                            "name": "timeInterval",
+                                            "value": {
+                                                "_Now": "2018-10-05T13:51:03.312Z",
+                                                "_duration": 86400000,
+                                                "_end": null
+                                            },
+                                            "isOptional": true
+                                        },
+                                        {
+                                            "name": "timeRange",
+                                            "binding": "timeRange",
+                                            "isOptional": true
+                                        }
+                                    ],
+                                    "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/ViewTileIFramePart"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "metadata": {
+                "model": {
+                    "timeRange": {
+                        "value": {
+                            "relative": {
+                                "duration": 24,
+                                "timeUnit": 1
+                            }
+                        },
+                        "type": "MsPortalFx.Composition.Configuration.ValueTypes.TimeRange"
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {
+            "WorkspaceID": {
+                "type": "string",
+                "value": "[reference(resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name), variables('workspace').apiVersion).customerId]"
+            },
+            "WorkspaceKey": {
+                "type": "string",
+                "value": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name), variables('workspace').apiVersion).primarySharedKey]"
+            }
+        }
+    }

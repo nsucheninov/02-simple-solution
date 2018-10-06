@@ -1,0 +1,66 @@
+{
+    "properties": {
+        "lenses": {
+            "0": {
+                "order": 0,
+                "parts": {
+                    "0": {
+                        "position": {
+                            "x": 0,
+                            "y": 0,
+                            "rowSpan": 2,
+                            "colSpan": 4
+                        },
+                        "metadata": {
+                            "inputs": [
+                                {
+                                    "name": "id",
+                                    "value": "/subscriptions/d9f87ab9-c1ad-48d7-a09d-35a61b313be7/resourcegroups/test02/providers/Microsoft.OperationalInsights/workspaces/us6d46pm5zyro-ws/views/SampleView"
+                                },
+                                {
+                                    "name": "solutionId",
+                                    "isOptional": true
+                                },
+                                {
+                                    "name": "timeInterval",
+                                    "value": {
+                                        "_Now": "2018-10-05T13:51:03.312Z",
+                                        "_duration": 86400000,
+                                        "_end": null
+                                    },
+                                    "isOptional": true
+                                },
+                                {
+                                    "name": "timeRange",
+                                    "binding": "timeRange",
+                                    "isOptional": true
+                                }
+                            ],
+                            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/ViewTileIFramePart"
+                        }
+                    }
+                }
+            }
+        },
+        "metadata": {
+            "model": {
+                "timeRange": {
+                    "value": {
+                        "relative": {
+                            "duration": 24,
+                            "timeUnit": 1
+                        }
+                    },
+                    "type": "MsPortalFx.Composition.Configuration.ValueTypes.TimeRange"
+                }
+            }
+        }
+    },
+    "id": "/subscriptions/d9f87ab9-c1ad-48d7-a09d-35a61b313be7/resourceGroups/dashboards/providers/Microsoft.Portal/dashboards/0e49bf94-4e08-4325-a8bb-ce1171c73232",
+    "name": "0e49bf94-4e08-4325-a8bb-ce1171c73232",
+    "type": "Microsoft.Portal/dashboards",
+    "location": "Central US",
+    "tags": {
+        "hidden-title": "My Dashboard"
+    }
+}
